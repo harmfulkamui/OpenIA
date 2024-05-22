@@ -1,0 +1,48 @@
+const Alexa = require('ask-sdk-core');
+const axios = require('axios');
+
+const OpenAI_API_KEY = sk-proj-EIpHmIvzWhauqIw4gSi1T3BlbkFJi0MIvcNMZ5ze3aHlHHnT;
+
+const LaunchRequestHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
+    },
+    handle(handlerInput) {
+        const speakOutput = 'Olá! Como posso ajudar hoje?';
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+};
+
+const ChatGPTIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getIntentName(handlerInput.requestEnvelope) === 'ChatGPTIntent';
+    },
+    async handle(handlerInput) {
+        const userQuestion = handlerInput.requestEnvelope.request.intent.slots.question.value;
+        
+        const response = await axios.post('https://api.openai.com/v1/engines/davinci-codex/completions', {
+            prompt: userQuestion,
+            max_tokens: 50
+        }, {
+            headers: {
+                'Authorization': `Bearer ${OpenAI_API_KEY}`
+            }
+        });
+
+        const aiResponse = response.data.choices[0].text.trim();
+        
+        return handlerInput.responseBuilder
+            .speak(aiResponse)
+            .getResponse();
+    }
+};
+
+exports.handler = Alexa.SkillBuilders.custom()
+    .addRequestHandlers(
+        LaunchRequestHandler,
+        ChatGPTIntentHandler
+    )
+    .lambda();
